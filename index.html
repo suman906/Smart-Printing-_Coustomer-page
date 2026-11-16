@@ -2778,7 +2778,7 @@ function finishNow(c,m,tn){var n=tn||nextTicket(),no="#"+String(n).padStart(3,"0
  // One order record. It includes the customer name and has NO transaction id.
  // To save it in Firebase, listen for it: window.addEventListener("xf:order",function(e){ });
  var order={ticket:n,name:S.name,method:m==="cash"?"cash":"upi",payStatus:m==="cash"?"cash-at-counter":"upi-awaiting-shop-check",amount:c.total,createdAt:Date.now(),
-  files:F.map(function(f){var k=f.c||calcFile(f);return{file:f.name,pages:f.pages,sel:k.n,range:f.range||"",copies:f.copies,size:f.size,color:f.color,sides:f.sides,nup:nupOf(f.nup).n}})};
+  files:F.map(function(f){var k=f.c||calcFile(f);return{file:f.name,pages:f.pages,sel:k.n,range:f.range||"",copies:f.copies,size:f.size,color:f.color,orient:f.orient||"portrait",sides:f.sides,nup:nupOf(f.nup).n}})};
  try{window.dispatchEvent(new CustomEvent("xf:order",{detail:order}))}catch(e){}
  $("#tsum").textContent=(c.files>1?c.files+" files":F[0].name)+" · "+c.pages+" page"+(c.pages>1?"s":"")+" · "+inr(c.total);
  $("#tnow").textContent="Now serving #"+String(Math.max(0,n-Math.min(n,3))).padStart(3,"0")+" · "+Math.min(n,3)+" ahead of you";
