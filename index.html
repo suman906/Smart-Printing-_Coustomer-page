@@ -2807,10 +2807,20 @@ try{firebase.initializeApp(FB_CONFIG);DB=firebase.database();
  DB.ref(".info/connected").on("value",function(s){FB_OK=!!s.val();var el=document.getElementById("fbs");if(el){el.textContent=FB_OK?"● Live":"● Offline";el.style.color=FB_OK?"var(--ok)":"var(--acc)"}})}catch(e){console.error("Firebase init failed",e)}
 function SH(p){return DB.ref("shops/"+SHOP_ID+(p?"/"+p:""))}
 
+/* ===== send the actual file(s) to the shop through Firebase, in chunks ===== */
+function upl(msg){var u=document.getElementById("upl");if(!u){u=document.createElement("div");u.id="upl";u.className="meta";u.style.marginTop="8px";var t=$("#tsum");t.parentNode.insertBefore(u,t.nextSibling)}u.textContent=msg}
+function b64(file){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){var d=String(r.result);res(d.slice(d.indexOf(",")+1))};r.onerror=function(){rej(new Error("Could not read the file"))};r.readAsDataURL(file)})}
+function uploadFiles(key,files,ref){var CH=400000,chain=Promise.resolve();upl("Sending your file to the shop. Keep this page open…");
+ files.forEach(function(file,i){chain=chain.then(function(){return b64(file)}).then(function(d){var n=Math.max(1,Math.ceil(d.length/CH)),ps=[];
+   for(var c=0;c<n;c++)ps.push(SH("filedata/"+key+"_"+i+"/"+c).set(d.slice(c*CH,(c+1)*CH)));
+   return Promise.all(ps).then(function(){return SH("files/"+key+"_"+i).set({name:file.name,type:file.type||"",size:file.size,chunks:n})})})});
+ chain.then(function(){return ref.child("uploaded").set(true)}).then(function(){upl("Your file has reached the shop ✓")})
+  .catch(function(e){upl("Couldn’t send your file. Show it to the staff at the counter.");try{ref.child("uploadErr").set(String(e&&e.message||e).slice(0,120))}catch(x){}})}
 window.addEventListener("xf:order",function(e){
  if(!DB)return;var o=e.detail;o.status=o.method==="cash"?"Awaiting cash":"Awaiting UPI";o.day=dayKey();
- ORDREF=SH("orders").push();
+ ORDREF=SH("orders").push();var UPF=F.map(function(f){return f.file});
  ORDREF.set(o).catch(function(){toast2("Couldn’t send your order to the shop. Show this ticket at the counter.")});
+ uploadFiles(ORDREF.key,UPF,ORDREF);
  var MAP={"Awaiting cash":[-1,"Waiting for staff to confirm your cash payment. Printing starts after that."],
   "Awaiting UPI":[-1,"Waiting for the shop to confirm your UPI payment. Printing starts after that."],
   "Paid":[0,"Payment confirmed by the shop."],"Printing":[1,"Printing on the shop’s machine."],
