@@ -6,6 +6,9 @@
 <title>Xerox Flow: Print without the line</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-database-compat.min.js"></script>
+
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#EEF2F5;--surface:#fff;--ink:#14212B;--mute:#5B6B78;--line:#D3DCE3;--acc:#D8281F;--acc-ink:#fff;--ok:#12805C;--chip:#E3EAF0;--sel:#14212B;--sel-ink:#fff;
@@ -281,7 +284,7 @@ function parseRange(str,total){str=(str||"").replace(/\s/g,"");var list=[],i;
  for(i=1;i<=total;i++)if(seen[i])list.push(i);return{list:list}}
 function calcFile(f){var r=parseRange(f.range,f.pages);if(r.err)return{err:r.err};
  var n=r.list.length,np=nupOf(f.nup).n,faces=Math.ceil(n/np),sheets=f.sides==="double"?Math.ceil(faces/2):faces;
- var per=CFG.rate[f.color]*CFG.mult[f.size],total=Math.round(faces*per*f.copies*2)/2;
+ var per=(CFG.rate2?CFG.rate2[f.sides==="double"?"double":"single"][f.color]:CFG.rate[f.color])*CFG.mult[f.size],total=Math.round(faces*per*f.copies*2)/2;
  return{list:r.list,n:n,faces:faces,sheets:sheets,total:total}}
 
 /* ===== file handling ===== */
@@ -2748,7 +2751,7 @@ function startYoupi(c){var oid=newOrderId();$("#p1").classList.add("hide");$("#p
  loadYoupi().then(function(){window.Youpi.pay({order_id:oid,amount:c.total,currency:"INR",name:CFG.shop,description:c.files+" file(s), "+c.pages+" page(s)",
   handler:function(r){closePay();if(r&&/SUCCESS/i.test(String(r.status||"")))finish(c,"upi-pending");else ferr("Payment wasn’t completed. No order was placed.")},
   onClose:function(){closePay()}})}).catch(function(){closePay();ferr("Couldn’t reach the payment service. Try again, or choose cash at the counter.")})}
-$("#go").onclick=function(){var c=summary();if(!c)return;var nm=validName();if(!nm)return;S.name=nm;if(S.method!=="upi")finish(c,"cash");else if(youpiReady())startYoupi(c);else openPay(c)};
+$("#go").onclick=function(){var c=summary();if(!c)return;var nm=validName();if(!nm)return;if(DB&&!FB_OK){ferr("Can’t reach the shop right now. Check your internet and try again.");return}S.name=nm;if(S.method!=="upi")finish(c,"cash");else if(youpiReady())startYoupi(c);else openPay(c)};
 
 /* ===== order summary across all files ===== */
 function summary(){var t=0,p=0;for(var i=0;i<F.length;i++){var c=calcFile(F[i]);if(c.err)return null;t+=c.total;p+=c.n*F[i].copies}
@@ -2757,7 +2760,19 @@ function summary(){var t=0,p=0;for(var i=0;i<F.length;i++){var c=calcFile(F[i]);
 /* ===== ticket + live status ===== */
 var timers=[],STEPS=["Paid","Printing","Ready","Delivered"];
 function setStep(i,msg){$("#steps").innerHTML="";STEPS.forEach(function(s,j){var d=document.createElement("div");d.className="st"+(j<=i?" on":"");var b=document.createElement("i");d.appendChild(b);d.appendChild(document.createTextNode(s));$("#steps").appendChild(d)});$("#stmsg").textContent=msg}
-function finish(c,m){var n=nextTicket(),no="#"+String(n).padStart(3,"0");
+var LIVE=false,ORDREF=null;
+function toast2(m){try{$("#tSub").textContent=m}catch(e){}}
+function tpush(fn,ms){if(!LIVE)timers.push(setTimeout(fn,ms))}
+function dayKey(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
+function finish(c,m){
+ if(!DB){LIVE=false;return finishNow(c,m)}
+ LIVE=true;if(!FB_OK)return finishNow(c,m);
+ var done=false,t=setTimeout(function(){if(!done){done=true;finishNow(c,m)}},6000);
+ SH("counters/"+dayKey()).transaction(function(v){return (v||0)+1},function(err,ok,snap){
+  if(done)return;done=true;clearTimeout(t);
+  if(err||!ok)return finishNow(c,m);
+  finishNow(c,m,snap.val())},false)}
+function finishNow(c,m,tn){var n=tn||nextTicket(),no="#"+String(n).padStart(3,"0");
  $("#vOrder").classList.add("hide");$("#bar").classList.add("hide");$("#vTicket").classList.remove("hide");window.scrollTo(0,0);
  $("#tno").textContent=no;$("#tname").textContent=S.name;
  // One order record. It includes the customer name and has NO transaction id.
@@ -2772,15 +2787,37 @@ function finish(c,m){var n=nextTicket(),no="#"+String(n).padStart(3,"0");
   setStep(-1,"Waiting for the shop to confirm your UPI payment. Printing starts after that.")}
  else if(m==="upi"){$("#tTitle").textContent="Paid. You’re in the queue";$("#tSub").textContent="Show this number at the counter when it’s ready.";
   setStep(0,"Payment confirmed by the gateway.");
-  timers.push(setTimeout(function(){setStep(1,"Printing on the shop’s machine.")},3000));
-  timers.push(setTimeout(function(){setStep(2,"Ready. Show ticket "+no+" at the counter.");$("#tnow").textContent="Your order is ready"},9000))}
+  tpush(function(){setStep(1,"Printing on the shop’s machine.")},3000);
+  tpush(function(){setStep(2,"Ready. Show ticket "+no+" at the counter.");$("#tnow").textContent="Your order is ready"},9000)}
  else{$("#tTitle").textContent="Order sent to counter";$("#tSub").textContent="Pay "+inr(c.total)+" in cash at the counter and quote this number.";
   setStep(-1,"Waiting for staff to confirm your cash payment. Printing starts after that.");
-  timers.push(setTimeout(function(){setStep(0,"Cash received and confirmed by staff.")},6000));
-  timers.push(setTimeout(function(){setStep(1,"Printing on the shop’s machine.")},9000));
-  timers.push(setTimeout(function(){setStep(2,"Ready. Show ticket "+no+" at the counter.");$("#tnow").textContent="Your order is ready"},14000))}}
+  tpush(function(){setStep(0,"Cash received and confirmed by staff.")},6000);
+  tpush(function(){setStep(1,"Printing on the shop’s machine.")},9000);
+  tpush(function(){setStep(2,"Ready. Show ticket "+no+" at the counter.");$("#tnow").textContent="Your order is ready"},14000)}}
 $("#again").onclick=function(){timers.forEach(clearTimeout);F.forEach(function(f){if(f.url)URL.revokeObjectURL(f.url)});F=[];A=0;$("#car").innerHTML="";ferr("");$("#cname").value="";S.name="";
  $("#vTicket").classList.add("hide");$("#vOrder").classList.remove("hide");$("#bar").classList.remove("hide");sync();window.scrollTo(0,0)};
+/* ===== FIREBASE: orders, live status, shop prices ===== */
+/* ===== FIREBASE (project xrox-data-base · number 746268562126) =====
+   If your Realtime Database was created in another region, copy the exact URL shown at the top of
+   Firebase console > Build > Realtime Database, and paste it into databaseURL. */
+var FB_CONFIG={projectId:"xrox-data-base",
+ databaseURL:"https://xrox-data-base-default-rtdb.firebaseio.com"};
+var SHOP_ID="sharma-xerox",DB=null,FB_OK=false;
+try{firebase.initializeApp(FB_CONFIG);DB=firebase.database();
+ DB.ref(".info/connected").on("value",function(s){FB_OK=!!s.val();var el=document.getElementById("fbs");if(el){el.textContent=FB_OK?"● Live":"● Offline";el.style.color=FB_OK?"var(--ok)":"var(--acc)"}})}catch(e){console.error("Firebase init failed",e)}
+function SH(p){return DB.ref("shops/"+SHOP_ID+(p?"/"+p:""))}
+
+window.addEventListener("xf:order",function(e){
+ if(!DB)return;var o=e.detail;o.status=o.method==="cash"?"Awaiting cash":"Awaiting UPI";o.day=dayKey();
+ ORDREF=SH("orders").push();
+ ORDREF.set(o).catch(function(){toast2("Couldn’t send your order to the shop. Show this ticket at the counter.")});
+ var MAP={"Awaiting cash":[-1,"Waiting for staff to confirm your cash payment. Printing starts after that."],
+  "Awaiting UPI":[-1,"Waiting for the shop to confirm your UPI payment. Printing starts after that."],
+  "Paid":[0,"Payment confirmed by the shop."],"Printing":[1,"Printing on the shop’s machine."],
+  "Ready":[2,"Ready. Show ticket #"+String(o.ticket).padStart(3,"0")+" at the counter."],"Delivered":[3,"Handed over. Thank you!"]};
+ ORDREF.child("status").on("value",function(s){var r=MAP[s.val()];if(!r)return;setStep(r[0],r[1]);
+  if(s.val()==="Ready")$("#tnow").textContent="Your order is ready"})});
+if(DB){SH("settings/rates").on("value",function(s){var v=s.val();if(v&&v.single&&v.double){CFG.rate2=v;CFG.rate={bw:v.single.bw,color:v.single.color};sync()}})}
 sync();
 </script>
 </body>
