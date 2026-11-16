@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xerox Flow: Print without the line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF2F5;--surface:#fff;--ink:#14212B;--mute:#5B6B78;--line:#D3DCE3;--acc:#D8281F;--acc-ink:#fff;--ok:#12805C;--chip:#E3EAF0;--sel:#14212B;--sel-ink:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E151B;--surface:#17212A;--ink:#EAF0F4;--mute:#97A6B2;--line:#2A3844;--acc:#FF5A4F;--acc-ink:#1A0604;--ok:#3FC79A;--chip:#22303B;--sel:#EAF0F4;--sel-ink:#14212B;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E151B;--surface:#17212A;--ink:#EAF0F4;--mute:#97A6B2;--line:#2A3844;--acc:#FF5A4F;--acc-ink:#1A0604;--ok:#3FC79A;--chip:#22303B;--sel:#EAF0F4;--sel-ink:#14212B;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 "Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px 16px 160px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 18px}
+.brand{font-weight:800;font-stretch:75%;font-size:22px;letter-spacing:-.01em}
+.shop{color:var(--mute);font-size:14px;text-align:right}
+.now{display:block;font-size:14px;font-variant-numeric:tabular-nums}
+h1{font-size:30px;line-height:1.05;font-weight:800;font-stretch:80%;margin:0 0 6px;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+h2{font-size:15px;font-weight:700;margin:0 0 10px}
+.drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:22px 12px;text-align:center;cursor:pointer;color:var(--mute)}
+.drop:focus-within,.drop:hover{border-color:var(--acc)}
+.drop b{display:block;color:var(--ink);font-size:17px}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.file{display:flex;gap:12px;align-items:center}
+.thumb{width:56px;height:72px;border-radius:6px;background:var(--chip);border:1px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:12px;overflow:hidden;flex:none}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.fname{font-weight:600;word-break:break-all}
+.meta{color:var(--mute);font-size:14px}
+.link{background:none;border:0;color:var(--acc);font:inherit;font-weight:600;padding:4px 0;cursor:pointer}
+.row{margin-bottom:14px}.row:last-child{margin-bottom:0}
+.lab{display:block;font-size:14px;color:var(--mute);margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:9px 14px;font:inherit;font-size:15px;cursor:pointer;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--sel);color:var(--sel-ink);border-color:var(--sel);font-weight:700}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.inp{width:100%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:11px 12px;font:inherit;min-height:44px}
+.inp.bad{border-color:var(--acc)}
+.err{color:var(--acc);font-size:13px;min-height:18px;margin-top:4px}
+.stepper{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.stepper button{width:44px;height:44px;border:0;background:var(--chip);color:var(--ink);font-size:20px;cursor:pointer}
+.stepper input{width:56px;text-align:center;border:0;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;height:44px}
+.pay{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;background:var(--surface)}
+.opt[aria-checked="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none}
+.opt[aria-checked="true"] .dot{border:6px solid var(--ink)}
+.opt small{display:block;color:var(--mute)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));z-index:5}
+.bar div{max-width:520px;margin:0 auto}
+.sum{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.sum span{color:var(--mute);font-size:13px}
+.sum b{font-size:26px;font-weight:800;font-stretch:80%}
+.btn{width:100%;border:0;border-radius:12px;background:var(--acc);color:var(--acc-ink);font:inherit;font-weight:800;font-size:17px;min-height:52px;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.priv{display:flex;gap:10px;color:var(--mute);font-size:13px;margin:4px 2px 12px}
+footer{text-align:center;margin-top:22px}
+footer b{display:block;font-size:18px;font-weight:800;font-stretch:80%}
+footer span{color:var(--mute);font-size:14px}
+.hide{display:none!important}
+.veil{position:fixed;inset:0;background:rgba(10,16,22,.6);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.sheet{background:var(--surface);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+.lock{display:flex;gap:8px;align-items:center;color:var(--ok);font-weight:600;font-size:13px;margin-bottom:10px}
+.amt{font-size:34px;font-weight:800;font-stretch:80%;margin:2px 0 12px}
+.trust{color:var(--mute);font-size:12.5px;margin-top:10px}
+.spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:sp 1s linear infinite;margin:10px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.ticket{background:var(--surface);border:1px solid var(--line);border-radius:16px;position:relative;text-align:center;padding:26px 16px 22px;margin:8px 0 14px}
+.ticket::before,.ticket::after{content:"";position:absolute;top:58%;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
+.ticket::before{left:-12px}.ticket::after{right:-12px}
+.tno{font-size:84px;line-height:1;font-weight:900;font-stretch:70%;letter-spacing:-.02em}
+.perf{border-top:2px dashed var(--line);margin:18px 6px 14px}
+.steps{display:flex;justify-content:space-between;margin:14px 0 4px;gap:4px}
+.st{flex:1;text-align:center;font-size:12.5px;color:var(--mute)}
+.st i{display:block;height:6px;border-radius:3px;background:var(--line);margin-bottom:6px}
+.st.on{color:var(--ink);font-weight:700}.st.on i{background:var(--ok)}
+.pill{display:inline-block;background:var(--chip);border-radius:999px;padding:4px 12px;font-size:13px}
+.demo{font-size:12px;color:var(--mute);text-align:center;margin-top:8px}
+/* ===== redesigned print block ===== */
+:root{--g:#2F7D12;--g-ink:#fff;--g-soft:#E9F8E4;--tile:#F3F5F8;--stage:#EDF0F3;--paper-sh:0 2px 10px rgba(20,33,43,.18)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--g:#58C441;--g-ink:#06210A;--g-soft:#17301F;--tile:#1E2A34;--stage:#0F1820;--paper-sh:0 2px 12px rgba(0,0,0,.5)}}
+:root[data-theme="dark"]{--g:#58C441;--g-ink:#06210A;--g-soft:#17301F;--tile:#1E2A34;--stage:#0F1820;--paper-sh:0 2px 12px rgba(0,0,0,.5)}
+.addrow{display:flex;justify-content:flex-end;margin:0 0 10px}
+.addf{display:inline-flex;gap:7px;align-items:center;border:1.5px solid var(--g);color:var(--g);background:var(--g-soft);border-radius:999px;padding:8px 14px;font-weight:600;font-size:15px;cursor:pointer}
+.addf input{position:absolute;opacity:0;width:1px;height:1px}
+.addf:focus-within{outline:3px solid var(--g);outline-offset:2px}
+.car{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 4%;scrollbar-width:none;position:relative;-webkit-overflow-scrolling:touch;margin:0 -16px}
+.car::-webkit-scrollbar{display:none}
+.car.single{padding:0 16px}
+.slide{flex:0 0 100%;scroll-snap-align:center;min-width:0}
+.stage{position:relative;height:340px;background:var(--stage);border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;overflow:hidden}
+.paper{display:grid;gap:5px;padding:7px;background:#fff;box-shadow:var(--paper-sh);transition:width .25s,height .25s}
+.cell{min-width:0;min-height:0;display:grid;place-items:center;overflow:hidden;background:#fff}
+.cell img{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;display:block;transition:filter .2s}
+.cell.ph{background:#F6F7F8;border:1px solid #E4E8EB}
+.cell.ph i{display:block;width:60%;height:5px;border-radius:3px;background:#D6DCE1;margin:4px auto}
+.cell.ph em{font:800 13px/1 "Archivo",sans-serif;font-style:normal;color:#8896A1}
+.cell.blank{background:#fff}
+.x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2}
+.fn{position:absolute;top:10px;left:10px;max-width:calc(100% - 60px);background:var(--surface);color:var(--ink);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(0,0,0,.2);z-index:2}
+.sp{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:var(--surface);border-radius:999px;padding:2px;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2;white-space:nowrap}
+.sp button{width:30px;height:28px;border:0;background:none;color:var(--ink);font-size:18px;cursor:pointer;border-radius:50%}
+.sp button:disabled{opacity:.3;cursor:default}
+.sp span{font-size:12.5px;font-weight:600;padding:0 6px}
+.pager{display:flex;justify-content:center;align-items:center;gap:6px;margin:10px 0 12px;min-height:22px}
+.pager .d{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
+.pager .n{background:#2B2F33;color:#fff;border-radius:999px;font-size:12px;font-weight:600;padding:3px 10px}
+.c2{border-radius:14px;padding:16px;background:var(--surface);margin-bottom:12px;border:1px solid var(--line)}
+.c2 h3{margin:0 0 12px;font-size:17px;font-weight:600}
+.crow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.crow h3{margin:0 0 2px}
+.crow .meta{font-size:15px}
+.gstep{display:inline-flex;align-items:center;background:var(--g);color:var(--g-ink);border-radius:10px;overflow:hidden;flex:none}
+.gstep button{width:36px;height:38px;border:0;background:none;color:inherit;font-size:20px;cursor:pointer}
+.gstep input{width:34px;text-align:center;border:0;background:none;color:inherit;font:inherit;font-weight:700;padding:0}
+.gstep input:focus-visible{outline-color:var(--g-ink);outline-offset:0}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.tile{display:flex;gap:10px;align-items:center;text-align:left;padding:10px 12px;min-height:56px;border:1.5px solid var(--line);background:var(--tile);color:var(--ink);border-radius:10px;font:inherit;cursor:pointer}
+.tile b{display:block;font-weight:600;font-size:15px}
+.tile small{display:block;color:var(--mute);font-size:14px}
+.tile svg{flex:none}
+.tile[aria-pressed="true"]{background:var(--g-soft);border-color:var(--g)}
+.tile:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.sub3{font-size:17px;font-weight:600;margin:0 0 10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{margin-bottom:14px;min-width:0}
+.fld>.lab{margin-bottom:6px}
+.sel{position:relative}
+.sel select{width:100%;appearance:none;-webkit-appearance:none;border:1.5px solid var(--line);background:var(--tile);color:var(--ink);border-radius:10px;padding:0 34px 0 12px;min-height:46px;font:inherit;font-weight:600;cursor:pointer}
+.sel select:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.sel::after{content:"";position:absolute;right:14px;top:50%;width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.fixed{display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:0 12px;border:1.5px solid var(--line);background:var(--tile);color:var(--ink);border-radius:10px;font-weight:600;opacity:.85;cursor:default;user-select:none}
+.fixed small{color:var(--mute);font-weight:500;font-size:13px}
+.inp.bad{border-color:var(--acc)}
+.btn.go{background:var(--g);color:var(--g-ink)}
+.sum span{font-size:15px;color:var(--ink)}
+.sum small{display:block;color:var(--mute);font-size:12.5px}
+
+</style>
+</head>
+<body>
+<main>
+<header><span class="brand">Xerox Flow</span><span class="shop"><span class="now" id="nowDt"></span></span></header>
+
+<section id="vOrder">
+<h1>Scan. Upload. Collect.</h1>
+<p class="sub">No app, no WhatsApp. Set your print options and pick up with a ticket number.</p>
+
+<div class="card" id="cFile">
+<h2>Your document</h2>
+<label class="drop" id="drop"><b>Tap to upload</b>PDF, JPG or PNG (Word and HEIC also work)<input type="file" id="fi" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"></label>
+</div>
+<div class="err" id="ferr" role="alert"></div>
+
+<div id="docs" class="hide">
+<div class="addrow"><label class="addf"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V9z"/><path d="M13 3v6h6"/><path d="M12 12.5v5M9.5 15h5"/></svg>Add files<input type="file" id="fa" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"></label></div>
+<div class="car" id="car" aria-label="Your files. Swipe to switch"></div>
+<div class="pager" id="pager"></div>
+
+<div class="c2"><div class="crow"><div><h3>Number of copies</h3><div class="meta" id="fileLine">File 1 (1 page)</div></div>
+<div class="gstep"><button type="button" id="cm" aria-label="Fewer copies">−</button><input id="cp" inputmode="numeric" value="1" aria-label="Copies"><button type="button" id="cpp" aria-label="More copies">+</button></div></div>
+<div class="row hide" id="pgRow" style="margin:14px 0 0"><div class="crow"><span class="meta">Pages in this file (Word files: enter the count)</span>
+<div class="gstep"><button type="button" id="pm" aria-label="Fewer pages">−</button><input id="pgs" inputmode="numeric" value="1" aria-label="Total pages"><button type="button" id="pp" aria-label="More pages">+</button></div></div></div></div>
+
+<div class="c2">
+<h3>Choose print color</h3>
+<div class="tiles" id="t-color">
+<button type="button" class="tile" data-v="color"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><g style="mix-blend-mode:multiply"><circle cx="17" cy="11" r="8" fill="#FFD400"/><circle cx="11.5" cy="21" r="8" fill="#E5007D"/><circle cx="22.5" cy="21" r="8" fill="#009FE3"/></g></svg><span><b>Coloured</b><small id="r-color"></small></span></button>
+<button type="button" class="tile" data-v="bw"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="11" r="8" fill="#D5D8DB"/><circle cx="11.5" cy="21" r="8" fill="#6B7075"/><circle cx="22.5" cy="21" r="8" fill="#3A3F44" fill-opacity=".9"/></svg><span><b>B &amp; W</b><small id="r-bw"></small></span></button></div>
+<h3>Choose print orientation</h3>
+<div class="tiles" id="t-orient">
+<button type="button" class="tile" data-v="portrait"><svg width="30" height="34" viewBox="0 0 30 34" aria-hidden="true"><path d="M5 2h14l7 7v21a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2z" fill="#4C8DF6"/><path d="M19 2l7 7h-5a2 2 0 01-2-2z" fill="#9CC0FA"/><circle cx="14.5" cy="15" r="2.6" fill="#fff"/><path d="M10.5 25v-5a4 4 0 018 0v5z" fill="#fff"/></svg><span><b>Portrait</b><small id="d-por"></small></span></button>
+<button type="button" class="tile" data-v="landscape"><svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><path d="M2 5a2 2 0 012-2h21l7 7v16a2 2 0 01-2 2H4a2 2 0 01-2-2z" fill="#4C8DF6"/><path d="M25 3l7 7h-5a2 2 0 01-2-2z" fill="#9CC0FA"/><circle cx="12" cy="12.5" r="2.6" fill="#fff"/><path d="M8 23v-5a4 4 0 018 0v5z" fill="#fff"/></svg><span><b>Landscape</b><small id="d-lan"></small></span></button></div>
+<div class="fld"><span class="lab">Paper size</span><div class="fixed" aria-label="Paper size: A4, fixed">A4<small>Fixed</small></div></div>
+<div class="two">
+<div class="fld"><label class="lab" for="s-sides">Sides</label><div class="sel"><select id="s-sides"><option value="single">Single side</option><option value="double">Both sides</option></select></div></div>
+<div class="fld"><label class="lab" for="s-nup">Pages per sheet</label><div class="sel"><select id="s-nup"></select></div></div></div>
+<div class="fld" style="margin-bottom:0"><label class="lab" for="range">Pages to print (blank for all)</label><input class="inp" id="range" placeholder="e.g. 1-3, 5, 8-10" autocomplete="off"><div class="err" id="rerr" role="alert"></div></div>
+</div>
+</div>
+
+<div class="card">
+<h2>How will you pay?</h2>
+<div class="pay" role="radiogroup" aria-label="Payment method">
+<div class="opt" role="radio" tabindex="0" aria-checked="true" data-m="upi"><span class="dot"></span><span><b>Pay online with UPI</b><small>Printing starts right after payment</small></span></div>
+<div class="opt" role="radio" tabindex="0" aria-checked="false" data-m="cash"><span class="dot"></span><span><b>Pay cash at counter</b><small>Staff confirm your order, then it prints</small></span></div>
+</div></div>
+
+<div class="priv"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><span>Your file is sent over an encrypted connection and deleted within 24 hours of printing. Only this shop can see it.</span></div>
+<footer><b>Na Galti, Na Line, Na Confusion</b><span>No Bhid, Instant Print</span></footer>
+</section>
+
+<section id="vTicket" class="hide">
+<h1 id="tTitle">Order placed</h1>
+<p class="sub" id="tSub"></p>
+<div class="ticket"><div class="meta">Your ticket number</div><div class="tno" id="tno">#000</div>
+<div class="perf"></div><div class="meta" id="tsum"></div><div style="margin-top:10px"><span class="pill" id="tnow"></span></div></div>
+<div class="card"><h2>Order status</h2><div class="steps" id="steps"></div><div class="meta" id="stmsg" style="margin-top:10px"></div></div>
+<button class="btn" id="again" type="button" style="background:var(--sel);color:var(--sel-ink)">Start a new order</button>
+<div class="demo">Demo mode: statuses are simulated. In production the shop’s print agent updates them live.</div>
+</section>
+</main>
+
+<div class="bar" id="bar"><div>
+<div class="sum"><span id="brk">Add a document to see the price</span><b id="tot">₹0</b></div>
+<button class="btn go" id="go" type="button" disabled>Pay with UPI</button></div></div>
+
+<div class="veil hide" id="veil"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pt">
+<div id="p1">
+<div class="lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Secure checkout</div>
+<div class="meta" id="pt">Pay <span id="pshop"></span></div><div class="amt" id="pamt"></div>
+<label class="lab" for="upi">Your UPI ID</label>
+<input class="inp" id="upi" placeholder="name@bank" autocomplete="off" autocapitalize="none" spellcheck="false">
+<div class="chips" style="margin-top:8px"><button class="chip" type="button" data-s="@okicici">@okicici</button><button class="chip" type="button" data-s="@ybl">@ybl</button><button class="chip" type="button" data-s="@paytm">@paytm</button><button class="chip" type="button" data-s="@oksbi">@oksbi</button></div>
+<div class="err" id="uerr" role="alert"></div>
+<button class="btn" id="pay" type="button">Send payment request</button>
+<button class="link" id="pcancel" type="button" style="width:100%;margin-top:6px">Cancel</button>
+<div class="trust">Payments are handled by a PCI-DSS certified gateway. This page never sees your UPI PIN, and the shop only gets “Paid” once the gateway confirms it.</div>
+</div>
+<div id="p2" class="hide" style="text-align:center"><div class="spin"></div><b>Waiting for approval</b><div class="meta">Open your UPI app and approve the request.</div></div>
+</div></div>
+
+<script>
+/* ===== CONFIG ===== */
+var CFG={shop:"Sharma Xerox & Stationery",shopId:"sharma-xerox",
+ rate:{bw:2,color:10},               /* ₹ per printed side, A4 */
+ mult:{A4:1,A5:.5,A3:2,Letter:1,Legal:1.25},
+ maxMB:25,
+ gateway:"demo"                      /* "demo" | "razorpay" – see payWithGateway() */};
+var $=function(s){return document.querySelector(s)};
+$("#pshop").textContent=CFG.shop;
+if(window.pdfjsLib){try{pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"}catch(e){}}
+CFG.maxFiles=10;
+/* current date, top right */
+function tickClock(){var d=new Date(),z=function(n){return(n<10?"0":"")+n};
+ var days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],mon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+ $("#nowDt").textContent=days[d.getDay()]+", "+d.getDate()+" "+mon[d.getMonth()]+" "+d.getFullYear()}
+tickClock();setInterval(tickClock,60000);
+var SIZES={A4:[8.3,11.7],A3:[11.7,16.5],A5:[5.8,8.3],Letter:[8.5,11],Legal:[8.5,14]};
+var NUP=[["1x1","1 × 1",1,1,1],["1x2","1 × 2",2,2,1],["2x2","2 × 2",4,2,2],["2x3","2 × 3",6,3,2],["3x3","3 × 3",9,3,3]]; /* key,label,pages,cols,rows */
+function nupOf(k){for(var i=0;i<NUP.length;i++)if(NUP[i][0]===k)return{n:NUP[i][2],cols:NUP[i][3],rows:NUP[i][4]};return{n:1,cols:1,rows:1}}
+var F=[],A=0;
+function cur(){return F[A]}
+function inr(n){return"₹"+(n%1?n.toFixed(1):n)}
+function plural(n,w){return n+" "+w+(n===1?"":"s")}
+
+/* ===== static controls ===== */
+
+NUP.forEach(function(n){var o=document.createElement("option");o.value=n[0];o.textContent=n[1]+(n[2]>1?"  ("+n[2]+" pages per sheet)":"");$("#s-nup").appendChild(o)});
+
+/* ===== parse page range ===== */
+function parseRange(str,total){str=(str||"").replace(/\s/g,"");var list=[],i;
+ if(!str){for(i=1;i<=total;i++)list.push(i);return{list:list}}
+ var seen={},parts=str.split(",");
+ for(i=0;i<parts.length;i++){var m=/^(\d+)(?:-(\d+))?$/.exec(parts[i]);
+  if(!m)return{err:"Use a format like 1-3, 5, 8-10."};var a=+m[1],b=m[2]?+m[2]:a;
+  if(a<1||b<a)return{err:"Page ranges must go from low to high, starting at 1."};
+  if(b>total)return{err:"This file has only "+plural(total,"page")+"."};
+  for(var p=a;p<=b;p++)seen[p]=1}
+ for(i=1;i<=total;i++)if(seen[i])list.push(i);return{list:list}}
+function calcFile(f){var r=parseRange(f.range,f.pages);if(r.err)return{err:r.err};
+ var n=r.list.length,np=nupOf(f.nup).n,faces=Math.ceil(n/np),sheets=f.sides==="double"?Math.ceil(faces/2):faces;
+ var per=CFG.rate[f.color]*CFG.mult[f.size],total=Math.round(faces*per*f.copies*2)/2;
+ return{list:r.list,n:n,faces:faces,sheets:sheets,total:total}}
+
+/* ===== file handling ===== */
+function ferr(m){$("#ferr").textContent=m||""}
+function addFiles(list){ferr("");var msgs=[],added=0;
+ Array.prototype.forEach.call(list,function(file){
+  if(F.length>=CFG.maxFiles){msgs.push("You can add up to "+CFG.maxFiles+" files per order.");return}
+  var ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(!/^(pdf|jpe?g|png|docx?|heic)$/.test(ext)){msgs.push(file.name+": this file type isn’t supported. Upload a PDF, JPG or PNG.");return}
+  if(file.size>CFG.maxMB*1048576){msgs.push(file.name+" is larger than "+CFG.maxMB+" MB. Compress it or split it.");return}
+  var f={file:file,name:file.name,ext:ext,pages:1,known:true,color:"bw",size:"A4",orient:"portrait",sides:"single",nup:"1x1",range:"",copies:1,url:null,pdf:null,thumbs:{},pend:{},face:0,c:null};
+  if(/^(jpe?g|png)$/.test(ext)){f.url=URL.createObjectURL(file)}
+  else if(ext==="pdf"){readPdf(f)}
+  else{f.known=false}
+  F.push(f);added++});
+ if(msgs.length)ferr(msgs[0]);
+ if(added){A=F.length-1;build(true)}}
+function readPdf(f){f.file.arrayBuffer().then(function(buf){
+ var t=new TextDecoder("latin1").decode(new Uint8Array(buf));
+ f.pages=Math.max(1,(t.match(/\/Type\s*\/Page[^s]/g)||[]).length);
+ if(window.pdfjsLib){pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise.then(function(d){f.pdf=d;f.pages=d.numPages;sync()}).catch(function(){})}
+ sync()})}
+$("#fi").onchange=function(e){addFiles(e.target.files);e.target.value=""};
+$("#fa").onchange=function(e){addFiles(e.target.files);e.target.value=""};
+function removeFile(f){var i=F.indexOf(f);if(i<0)return;if(f.url)URL.revokeObjectURL(f.url);F.splice(i,1);A=Math.max(0,Math.min(A,F.length-1));ferr("");build(false)}
+
+/* page picture for the preview: image, rendered PDF page, or null (placeholder) */
+function pageSrc(f,p){if(f.url)return f.url;if(f.thumbs[p])return f.thumbs[p];
+ if(f.pdf&&!f.pend[p]){f.pend[p]=1;f.pdf.getPage(p).then(function(pg){var v=pg.getViewport({scale:1}),sc=480/v.width,vp=pg.getViewport({scale:sc});
+  var cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;
+  return pg.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise.then(function(){f.thumbs[p]=cv.toDataURL("image/jpeg",.72);renderPapers()})}).catch(function(){})}
+ return null}
+
+/* ===== carousel ===== */
+function build(scroll){var car=$("#car");car.innerHTML="";car.classList.toggle("single",F.length<2);
+ F.forEach(function(f){var s=document.createElement("div");s.className="slide";
+  s.innerHTML='<div class="stage"><div class="fn"></div><button class="x" type="button" aria-label="Remove file">×</button><div class="paper"></div><div class="sp hide"><button type="button" class="pv" aria-label="Previous sheet">‹</button><span></span><button type="button" class="nx" aria-label="Next sheet">›</button></div></div>';
+  s.querySelector(".fn").textContent=f.name;
+  s.querySelector(".x").onclick=function(){removeFile(f)};
+  s.querySelector(".pv").onclick=function(){f.face=Math.max(0,f.face-1);sync()};
+  s.querySelector(".nx").onclick=function(){f.face=f.face+1;sync()};
+  f.el=s;car.appendChild(s)});
+ sync(true);if(F.length)requestAnimationFrame(function(){goTo(A,scroll?"smooth":"auto")})}
+var lockUntil=0;
+function goTo(i,b){var s=F[i]&&F[i].el;if(!s)return;var car=$("#car");lockUntil=Date.now()+(b==="auto"?150:700);car.scrollTo({left:s.offsetLeft-(car.clientWidth-s.offsetWidth)/2,behavior:b||"smooth"})}
+var raf=0;$("#car").addEventListener("scroll",function(){if(raf||Date.now()<lockUntil)return;raf=requestAnimationFrame(function(){raf=0;
+ var car=$("#car"),mid=car.scrollLeft+car.clientWidth/2,best=0,bd=1e9;
+ F.forEach(function(f,i){if(!f.el)return;var d=Math.abs(f.el.offsetLeft+f.el.offsetWidth/2-mid);if(d<bd){bd=d;best=i}});
+ if(best!==A){A=best;sync()}})});
+window.addEventListener("resize",renderPapers);
+
+/* ===== live preview ===== */
+function renderPapers(){F.forEach(drawPaper)}
+function drawPaper(f){var s=f.el;if(!s)return;var st=s.querySelector(".stage"),paper=s.querySelector(".paper"),sp=s.querySelector(".sp");
+ var d=SIZES[f.size],w=d[0],h=d[1];if(f.orient==="landscape"){var t=w;w=h;h=t}
+ var availW=st.clientWidth-28,availH=st.clientHeight-84;if(availW<20)return;
+ var pw=Math.min(availW,availH*w/h),ph=pw*h/w;paper.style.width=pw+"px";paper.style.height=ph+"px";
+ var c=f.c||calcFile(f),list=c.err?parseRange("",f.pages).list:c.list,np=nupOf(f.nup),faces=Math.max(1,Math.ceil(list.length/np.n));
+ if(f.face>=faces)f.face=faces-1;
+ var cells=np.cols*np.rows,pages=list.slice(f.face*np.n,f.face*np.n+np.n);
+ paper.style.gridTemplateColumns="repeat("+np.cols+",minmax(0,1fr))";paper.style.gridTemplateRows="repeat("+np.rows+",minmax(0,1fr))";
+ paper.style.gap=(np.n>4?3:5)+"px";paper.style.padding=(np.n>4?5:7)+"px";
+ var key=[f.face,f.nup,f.color,pages.join(",")].join("|"),html="";
+ paper.innerHTML="";
+ for(var i=0;i<cells;i++){var cell=document.createElement("div");
+  if(i>=pages.length){cell.className="cell blank"}
+  else{var src=pageSrc(f,pages[i]);
+   if(src){cell.className="cell";var im=document.createElement("img");im.src=src;im.alt="Page "+pages[i];im.draggable=false;im.style.filter=f.color==="bw"?"grayscale(1) contrast(1.05)":"none";cell.appendChild(im)}
+   else{cell.className="cell ph";cell.innerHTML='<div style="width:100%;text-align:center"><em>'+(f.pdf?"…":f.ext.toUpperCase())+'</em><i></i><i></i><i style="width:45%"></i></div>'}}
+  paper.appendChild(cell)}
+ var dbl=f.sides==="double";
+ if(faces>1||(dbl&&false)){sp.classList.remove("hide");
+  var sheet=dbl?Math.floor(f.face/2)+1:f.face+1,totalSheets=dbl?Math.ceil(faces/2):faces;
+  sp.querySelector("span").textContent="Sheet "+sheet+" of "+totalSheets+(dbl?" · "+(f.face%2?"Back":"Front"):"");
+  sp.querySelector(".pv").disabled=f.face<=0;sp.querySelector(".nx").disabled=f.face>=faces-1}
+ else sp.classList.add("hide")}
+
+/* ===== sync UI ===== */
+function sync(rebuilt){
+ var has=F.length>0;
+ $("#cFile").classList.toggle("hide",has);$("#docs").classList.toggle("hide",!has);
+ F.forEach(function(f){f.c=calcFile(f)});
+ renderPapers();
+ var f=cur();
+ if(f){
+  var c=f.c,pg=c.err?f.pages:c.n;
+  $("#fileLine").textContent="File "+(A+1)+" ("+plural(f.pages,"page")+")";
+  setVal($("#cp"),f.copies);setVal($("#pgs"),f.pages);$("#pgRow").classList.toggle("hide",f.known);
+  document.querySelectorAll("#t-color .tile").forEach(function(t){t.setAttribute("aria-pressed",String(t.dataset.v===f.color))});
+  document.querySelectorAll("#t-orient .tile").forEach(function(t){t.setAttribute("aria-pressed",String(t.dataset.v===f.orient))});
+  var m=CFG.mult[f.size];$("#r-color").textContent=inr(CFG.rate.color*m)+"/page";$("#r-bw").textContent=inr(CFG.rate.bw*m)+"/page";
+  var d=SIZES[f.size];$("#d-por").textContent=d[0]+" x "+d[1]+" in";$("#d-lan").textContent=d[1]+" x "+d[0]+" in";
+  $("#s-sides").value=f.sides;$("#s-nup").value=f.nup;
+  setVal($("#range"),f.range);$("#rerr").textContent=c.err||"";$("#range").classList.toggle("bad",!!c.err)}
+ /* pager */
+ var pg=$("#pager");pg.innerHTML="";
+ if(F.length>1)F.forEach(function(x,i){if(i===A){var n=document.createElement("span");n.className="n";n.textContent=(i+1)+"/"+F.length;pg.appendChild(n)}
+  else{var b=document.createElement("button");b.type="button";b.className="d";b.setAttribute("aria-label","Go to file "+(i+1));b.onclick=function(){A=i;goTo(i);sync()};pg.appendChild(b)}});
+ /* bar */
+ var bad=-1,pages=0,sheets=0,total=0;
+ F.forEach(function(x,i){if(x.c.err){if(bad<0)bad=i}else{pages+=x.c.n*x.copies;sheets+=x.c.sheets*x.copies;total+=x.c.total}});
+ var ok=has&&bad<0;
+ if(ok){$("#tot").textContent=inr(total);$("#brk").innerHTML="Total "+plural(pages,"page")+"<small>"+plural(sheets,"sheet")+" · "+plural(F.length,"file")+"</small>"}
+ else{$("#tot").textContent=has?"–":"₹0";$("#brk").textContent=has?"Fix the page range in file "+(bad+1):"Add a document to see the price"}
+ document.querySelectorAll(".opt").forEach(function(o){o.setAttribute("aria-checked",String(o.dataset.m===S.method))});
+ $("#go").disabled=!ok;
+ $("#go").textContent=S.method==="upi"?"Pay "+(ok?inr(total):"")+" with UPI":"Send to counter · pay cash";
+ S.total=total;S.pages=pages;S.files=F.length}
+function setVal(el,v){if(document.activeElement!==el)el.value=v}
+var S={method:"upi",total:0,pages:0,files:0};
+
+/* ===== control handlers (all act on the file being previewed) ===== */
+function bind(sel,key,conv){document.querySelectorAll(sel).forEach(function(t){t.onclick=function(){var f=cur();if(!f)return;f[key]=t.dataset.v;f.face=0;sync()}})}
+bind("#t-color .tile","color");bind("#t-orient .tile","orient");
+$("#s-sides").onchange=function(){var f=cur();if(f){f.sides=this.value;sync()}};
+$("#s-nup").onchange=function(){var f=cur();if(f){f.nup=this.value;f.face=0;sync()}};
+$("#range").oninput=function(){var f=cur();if(f){f.range=this.value;f.face=0;sync()}};
+function setCopies(n){var f=cur();if(!f)return;f.copies=Math.max(1,Math.min(500,n||1));$("#cp").value=f.copies;sync()}
+$("#cp").onchange=function(){setCopies(parseInt(this.value,10))};
+$("#cm").onclick=function(){setCopies(cur().copies-1)};$("#cpp").onclick=function(){setCopies(cur().copies+1)};
+function setPages(n){var f=cur();if(!f)return;f.pages=Math.max(1,Math.min(999,n||1));$("#pgs").value=f.pages;sync()}
+$("#pgs").onchange=function(){setPages(parseInt(this.value,10))};
+$("#pm").onclick=function(){setPages(cur().pages-1)};$("#pp").onclick=function(){setPages(cur().pages+1)};
+document.querySelectorAll(".opt").forEach(function(o){function pick(){S.method=o.dataset.m;sync()}
+ o.onclick=pick;o.onkeydown=function(e){if(e.key===" "||e.key==="Enter"){e.preventDefault();pick()}}});
+
+/* ===== ticket numbers (daily reset, per shop) ===== */
+var mem={};
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){if(v===undefined)return mem[k]||null;mem[k]=v}}
+function nextTicket(){var d=new Date(),key="xf:"+CFG.shopId+":"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+ var n=(parseInt(store(key),10)||0)+1;store(key,String(n));return n}
+
+/* ===== payment ===== */
+/* SECURITY MODEL (production):
+   1. Browser POSTs the order (file id + options) to YOUR server. The server re-computes the price – never trust this page’s total.
+   2. Server creates a gateway order (Razorpay/Cashfree) with the secret key, which lives only on the server, and returns order_id.
+   3. This page opens the gateway’s hosted checkout with order_id + the PUBLIC key id only.
+   4. The gateway calls your server webhook; the server verifies the HMAC signature and only then marks the order “Paid”.
+   5. The page polls/subscribes for status; the print agent prints only orders the server has marked Paid. */
+function payWithGateway(order){
+ return new Promise(function(res,rej){
+  if(CFG.gateway==="razorpay"){
+   /* fetch("/api/orders",{method:"POST",body:JSON.stringify(order)}).then(r=>r.json()).then(o=>{
+        new Razorpay({key:PUBLIC_KEY_ID,order_id:o.gateway_order_id,handler:()=>res(o.id),modal:{ondismiss:()=>rej()}}).open()}) */
+   return rej(new Error("Gateway not connected"))}
+  setTimeout(res,3200)})}
+function openPay(c){$("#pamt").textContent=inr(c.total);$("#p1").classList.remove("hide");$("#p2").classList.add("hide");$("#upi").value="";$("#uerr").textContent="";$("#veil").classList.remove("hide");$("#upi").focus()}
+function closePay(){$("#veil").classList.add("hide")}
+document.querySelectorAll("[data-s]").forEach(function(b){b.onclick=function(){var v=$("#upi").value.split("@")[0];$("#upi").value=v+b.dataset.s;$("#upi").focus()}});
+$("#pcancel").onclick=closePay;
+$("#veil").onclick=function(e){if(e.target===this&&$("#p2").classList.contains("hide"))closePay()};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("#veil").classList.contains("hide")&&$("#p2").classList.contains("hide"))closePay()});
+$("#go").onclick=function(){var c=summary();if(!c)return;if(S.method==="upi")openPay(c);else finish(c,"cash")};
+$("#pay").onclick=function(){var v=$("#upi").value.trim();
+ if(!/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/.test(v)){$("#uerr").textContent="Enter a valid UPI ID, like name@bank.";$("#upi").classList.add("bad");return}
+ $("#upi").classList.remove("bad");$("#p1").classList.add("hide");$("#p2").classList.remove("hide");
+ payWithGateway({upi:v}).then(function(){closePay();finish(summary(),"upi")}).catch(function(){
+  $("#p2").classList.add("hide");$("#p1").classList.remove("hide");$("#uerr").textContent="Payment didn’t go through. No money was taken. Try again."})};
+
+/* ===== order summary across all files ===== */
+function summary(){var t=0,p=0;for(var i=0;i<F.length;i++){var c=calcFile(F[i]);if(c.err)return null;t+=c.total;p+=c.n*F[i].copies}
+ return F.length?{total:t,pages:p,files:F.length}:null}
+
+/* ===== ticket + live status ===== */
+var timers=[],STEPS=["Paid","Printing","Ready","Delivered"];
+function setStep(i,msg){$("#steps").innerHTML="";STEPS.forEach(function(s,j){var d=document.createElement("div");d.className="st"+(j<=i?" on":"");var b=document.createElement("i");d.appendChild(b);d.appendChild(document.createTextNode(s));$("#steps").appendChild(d)});$("#stmsg").textContent=msg}
+function finish(c,m){var n=nextTicket(),no="#"+String(n).padStart(3,"0");
+ $("#vOrder").classList.add("hide");$("#bar").classList.add("hide");$("#vTicket").classList.remove("hide");window.scrollTo(0,0);
+ $("#tno").textContent=no;
+ $("#tsum").textContent=(c.files>1?c.files+" files":F[0].name)+" · "+c.pages+" page"+(c.pages>1?"s":"")+" · "+inr(c.total);
+ $("#tnow").textContent="Now serving #"+String(Math.max(0,n-Math.min(n,3))).padStart(3,"0")+" · "+Math.min(n,3)+" ahead of you";
+ timers.forEach(clearTimeout);timers=[];
+ if(m==="upi"){$("#tTitle").textContent="Paid. You’re in the queue";$("#tSub").textContent="Show this number at the counter when it’s ready.";
+  setStep(0,"Payment confirmed by the gateway.");
+  timers.push(setTimeout(function(){setStep(1,"Printing on the shop’s machine.")},3000));
+  timers.push(setTimeout(function(){setStep(2,"Ready. Show ticket "+no+" at the counter.");$("#tnow").textContent="Your order is ready"},9000))}
+ else{$("#tTitle").textContent="Order sent to counter";$("#tSub").textContent="Pay "+inr(c.total)+" in cash at the counter and quote this number.";
+  setStep(-1,"Waiting for staff to confirm your cash payment. Printing starts after that.");
+  timers.push(setTimeout(function(){setStep(0,"Cash received and confirmed by staff.")},6000));
+  timers.push(setTimeout(function(){setStep(1,"Printing on the shop’s machine.")},9000));
+  timers.push(setTimeout(function(){setStep(2,"Ready. Show ticket "+no+" at the counter.");$("#tnow").textContent="Your order is ready"},14000))}}
+$("#again").onclick=function(){timers.forEach(clearTimeout);F.forEach(function(f){if(f.url)URL.revokeObjectURL(f.url)});F=[];A=0;$("#car").innerHTML="";ferr("");
+ $("#vTicket").classList.add("hide");$("#vOrder").classList.remove("hide");$("#bar").classList.remove("hide");sync();window.scrollTo(0,0)};
+sync();
+</script>
+</body>
+</html>
